@@ -1,0 +1,39 @@
+target/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Additional Java/Maven output
+*.class
+*.war
+*.ear
+.classpath
+.project
+.settings/
+
+# Local environment and credentials (examples may be versioned)
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+secrets/
+application-local.properties
+application-local.yml
+application-local.yaml
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Logs and temporary/editor files
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~
