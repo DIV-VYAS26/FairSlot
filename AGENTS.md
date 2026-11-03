@@ -5,7 +5,8 @@
 Build a reliable reservation and capacity-management backend, with evidence of
 concurrency correctness and a future path to college event/workshop use.
 Engineering evidence and validated product needs matter more than technology count.
-Phase 0 contains documentation only. Read README.md, docs/architecture.md and
+Phase 0 established documentation; Milestone 1 adds only an application health foundation.
+Read README.md, docs/architecture.md and
 docs/progress.md before changing the project; do not assume planned features exist.
 
 ## Approved stack and boundaries
@@ -13,7 +14,8 @@ docs/progress.md before changing the project; do not assume planned features exi
 - Java 21, Spring Boot, Maven, Spring Web and Bean Validation.
 - PostgreSQL and Flyway; Spring Data JPA where useful, JDBC/native SQL for critical operations.
 - Later: Kafka, Spring Kafka, transactional outbox and idempotent consumers.
-- JUnit 5, Spring Boot Test and Testcontainers; later, measured load tests.
+- JUnit Jupiter 6 (approved with Spring Boot 4.1.2), Spring Boot Test and later
+  Testcontainers; later, measured load tests. The original specification named JUnit 5.
 - Local Docker/Compose, Actuator, Micrometer and structured logs when introduced.
 - Verify maintained versions and compatibility before adding dependencies.
 - Start with a modular monolith. PostgreSQL owns capacity and reservation state.
@@ -48,8 +50,8 @@ docs/progress.md before changing the project; do not assume planned features exi
   local configuration. Review tracked files; .gitignore does not protect tracked secrets.
 - Authentication and authorization are mandatory before real-user exposure.
 - No commits, pushes, remotes, publishing, deployment, data deletion or destructive
-  operations without explicit user authorization. Git initialization is authorized
-  for Phase 0; commits and remotes are not.
+  operations without explicit user authorization. The initial Phase 0 commit was specifically approved and created. Further commits
+  and all remotes require separate explicit authorization.
 
 ## Collaboration and project memory
 

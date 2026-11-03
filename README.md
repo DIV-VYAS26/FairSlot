@@ -1,69 +1,173 @@
 # FairSlot
 
-FairSlot is a planned reservation and capacity-management platform for limited
-resources, initially aimed at college events, workshops and sessions.
+High-Concurrency Reservation System
 
-If 200 people compete for 20 seats, the backend must prevent overbooking, make
-client retries safe, roll back failed bookings and restore cancelled capacity once.
-The project aims to demonstrate rigorous Java backend engineering and, after
-validation with organizers, support a useful product.
+FairSlot is a reservation and capacity-management backend project for limited
+resources, initially aimed at college events, workshops and sessions. Its goals
+are rigorous Java backend engineering and a useful product validated with organizers.
+
+The eventual challenge: 200 people competing for 20 seats must not overbook;
+retries must be safe, failed bookings must roll back, and cancellation must restore
+capacity once. **None of that reservation behavior is implemented yet.**
 
 ## Current status
 
-**Phase 0: repository foundation.** Working artifacts are repository instructions,
-planning documentation and ignore rules. A local Git repository is initialized;
-there are no commits or remotes. There is no application, build configuration,
-API, database, container configuration, messaging or benchmark result yet.
-There are no application build/run commands or automated tests to execute yet.
+Milestone 1 is implemented and verified: Java 21, Spring Boot 4.1.2, Maven Wrapper
+3.9.16, a local HTTP health endpoint and one real HTTP integration test. No database,
+reservation API, Kafka, authentication, Docker configuration or frontend exists.
+The approved Phase 0 commit is `21a04ce`. Source repository:
+[DIV-VYAS26/FairSlot](https://github.com/DIV-VYAS26/FairSlot).
 
-## Planned architecture and stack
+## Build, test and run
 
-A modular Spring Boot monolith will use PostgreSQL as the source of truth.
-Atomic conditional capacity updates and database transactions will protect bookings.
-Later, a transactional outbox will feed Kafka and consumers will deduplicate events.
+Use a JDK 21 installation and internet access for the first Wrapper/dependency
+fetch. Global Maven is unnecessary. On macOS, if JDK 21 is installed normally:
 
-Planned stack: Java 21, Maven, Spring Boot/Web, Bean Validation, PostgreSQL,
-Flyway, JPA where appropriate and JDBC/native SQL for critical operations.
-Testing will use JUnit 5, Spring Boot Test and Testcontainers. Later phases add
-Kafka/Spring Kafka, Docker Compose, Actuator, Micrometer and structured logs.
-Exact compatible dependency versions have not been selected or verified.
+```sh
+export JAVA_HOME="$(/usr/libexec/java_home -v 21)"
+export PATH="$JAVA_HOME/bin:$PATH"
+cd backend
+java -version
+./mvnw -version
+./mvnw clean verify
+java -jar target/fairslot-backend-0.0.1-SNAPSHOT.jar
+```
 
-## Roadmap
+In a second terminal:
+
+```sh
+curl --fail --include http://127.0.0.1:8080/api/health
+```
+
+The response is HTTP 200, `Content-Type: application/json`, and `{"status":"UP"}`.
+Press Ctrl+C in the server terminal to stop; Spring shuts Tomcat down gracefully.
+For development, `./mvnw spring-boot:run` is an alternative to running the JAR.
+For tests alone, run `./mvnw test`. On Windows use `mvnw.cmd` and configure the JDK
+through your platform's environment settings.
+
+Configuration lives in `backend/src/main/resources/application.properties`:
+application name `fairslot`, loopback address `127.0.0.1`, port `8080`. No passwords,
+API keys, database or required application environment variables exist. `JAVA_HOME`
+is a toolchain setting. `SERVER_PORT` or `--server.port=8081` can override the port.
+This health response proves HTTP availability only, not readiness of future dependencies.
+
+### Verified environment and limitation
+
+On 2026-11-03, verification used macOS arm64, Eclipse Temurin 21.0.13 and Maven
+3.9.16. The system had Java 23 and no Maven/JDK 21; portable tools were downloaded
+into `/private/tmp/fairslot-tools` without replacing the system installation.
+Archive SHA-256 (JDK) and SHA-512 (Maven) checks passed against publisher metadata.
+The Wrapper/dependency caches used temporary directories too.
+
+While those temporary tools remain available, this terminal setup reproduces the
+verified Java choice without installing anything system-wide:
+
+```sh
+export JAVA_HOME='/private/tmp/fairslot-tools/jdk-21.0.13+9/Contents/Home'
+export PATH="$JAVA_HOME/bin:$PATH"
+```
+
+Temporary directories may be cleaned by the OS. For ongoing development, install
+JDK 21 using your preferred method and configure VS Code to use it. No permanent
+JDK installation was performed by this milestone.
+
+`clean verify` passed: one test, zero failures/errors/skips, executable JAR created.
+Manual JAR startup and curl returned the response above; graceful shutdown completed.
+Mockito/Byte Buddy emitted dynamic-agent warnings during tests; the test passed.
+These warnings concern future JVM agent restrictions, not health behavior. No mock
+or agent configuration was added solely to hide them. VS Code debugging and the
+`spring-boot:run` alternative are documented workflows, not separately verified UI runs.
+
+## Files and execution flow
+
+- `backend/pom.xml`: project identity `com.fairslot:fairslot-backend:0.0.1-SNAPSHOT`,
+  Java release 21, managed dependencies and executable-JAR plugin. SNAPSHOT describes
+  our in-development application, not a preview Spring Boot dependency.
+- `backend/mvnw`, `backend/mvnw.cmd`: official Apache Wrapper scripts for Unix/Windows.
+- `backend/.mvn/wrapper/maven-wrapper.properties`: pins Maven 3.9.16; generated by
+  Wrapper plugin 3.3.4 in only-script mode, with no Wrapper JAR checked in.
+- `backend/src/main/java/com/fairslot/FairSlotApplication.java`: starts Spring Boot.
+- `backend/src/main/java/com/fairslot/health/HealthController.java`: the sole endpoint.
+- `backend/src/main/resources/application.properties`: minimal local configuration.
+- `backend/src/test/java/com/fairslot/health/HealthControllerTest.java`: starts a real
+  server on a random port, sends GET with the JDK HTTP client and checks HTTP 200,
+  JSON content type and strict JSON contents (without depending on whitespace).
+- `backend/target/`: generated classes, test reports and JAR; ignored by Git.
+
+Java supplies the language, compiler and JVM. Maven orchestrates compilation,
+testing and packaging. Spring Boot configures and starts the application; Tomcat
+is its embedded HTTP server. A dependency is a library brought into the build.
+
+The POM declares only two direct dependencies, with versions managed by Boot:
+
+| Item | Purpose |
+| --- | --- |
+| `spring-boot-starter-webmvc` | Spring MVC, embedded Tomcat and Jackson JSON conversion |
+| `spring-boot-starter-test` (test scope) | Boot test context, JUnit Jupiter 6.0.3, AssertJ, JSONassert and standard testing utilities; excluded from the runtime JAR |
+
+The Boot parent manages compatible library/plugin versions and build defaults;
+`spring-boot-maven-plugin` repackages the JAR with a launcher and runtime libraries.
+No Lombok, Actuator, persistence, messaging or validation dependency is needed yet.
+The user approved the managed JUnit 6 stack in place of the original JUnit 5 plan.
+Boot 4.1.2 is a stable release whose documented Java range includes Java 21 and
+whose minimum Maven version is 3.6.3. Actual dependency resolution and the Java 21
+build also passed. Sources: [requirements](https://docs.spring.io/spring-boot/system-requirements.html),
+[testing](https://docs.spring.io/spring-boot/reference/testing/index.html).
+
+`main` calls `SpringApplication.run`. `@SpringBootApplication` combines configuration,
+auto-configuration and component scanning. Its position in `com.fairslot` lets it
+find `com.fairslot.health.HealthController`. `@RestController` registers a controller
+whose return values become response bodies; `@GetMapping("/api/health")` registers
+the HTTP method/path. Tomcat accepts a connection, Spring MVC's DispatcherServlet
+selects the method, and Jackson serializes its returned Map into JSON. A successful
+normal return produces HTTP 200. There is no service or database call in this path.
+
+Maven's `verify` lifecycle compiles production code, compiles tests, runs Surefire
+(JUnit), packages the JAR and reaches verification. `clean` first removes generated
+`target/` output. Test reports are under `backend/target/surefire-reports/`.
+The JDK HTTP client is part of Java; it adds no dependency.
+
+## VS Code workflow
+
+Open FairSlot, import the Maven project in `backend/` if prompted, and select JDK
+21 through **Java: Configure Java Runtime** (requires Java tooling extensions).
+Open FairSlotApplication.java and use Run or Debug above `main`. To inspect a request,
+set a breakpoint inside HealthController.health(), start Debug, then issue curl.
+Continue execution to let the client receive the response; stop with the debugger
+Stop button. Terminal launches stop with Ctrl+C. Do not run two servers on port 8080.
+If the port is occupied, stop your earlier server or launch with `--server.port=8081`
+and use that port in curl. The automated test does not require port 8080.
+
+## Planned architecture and roadmap
+
+A modular monolith will use PostgreSQL as inventory truth, transactional conditional
+updates for booking, then an outbox and Kafka for reliable downstream processing.
+Future tools include Flyway, JDBC/JPA where appropriate, Bean Validation,
+Testcontainers, Docker Compose, Actuator, Micrometer and structured logs.
 
 | Phase | Planned result |
 | --- | --- |
-| 0 | Repository conventions, architecture and approved milestones |
-| 1 | Application foundation, then PostgreSQL-backed reservation correctness |
-| 2 | Transactional outbox, Kafka, deduplication and recovery |
+| 0 — complete | Repository conventions, documentation and Git foundation |
+| 1 — foundation complete | Next: PostgreSQL/Flyway, then correct reservations and cancellation |
+| 2 | Outbox, Kafka, deduplication and failure recovery |
 | 3 | Expanded concurrency/failure tests, measured performance and observability |
 | 4 | Authenticated organizer and participant product MVP |
-| 5 | Small real-world pilot and feedback |
+| 5 | Small pilot and feedback |
 | 6 | Scaling justified by measured bottlenecks or validated requirements |
 
-The basic overbooking concurrency test belongs in Phase 1; Phase 3 expands the
-engineering evidence. Frontend and authentication are deferred from the local
-prototype, but authentication and authorization are required before real-user use.
-
-## Proposed Milestone 1 — awaiting approval
-
-Create only the Java 21 + Spring Boot + Maven application foundation: a minimal
-application, clean feature-oriented package structure, a simple health-check
-endpoint, a basic automated test, and reproducible build/run instructions.
-
-No reservation logic, database integration or Kafka is included in this milestone.
-See [progress](docs/progress.md) for acceptance criteria and open decisions.
+The 200-attempts-for-20-seats correctness test belongs in Phase 1. Authentication
+and authorization are mandatory before real users. No benchmarks have run.
 
 ## Project references
 
 - [Working instructions](AGENTS.md)
-- [Planned architecture](docs/architecture.md)
-- [Progress and next milestone](docs/progress.md)
-- [Architecture decision records](docs/decisions/README.md)
+- [Architecture and unresolved decisions](docs/architecture.md)
+- [Progress and exact verification commands](docs/progress.md)
+- [ADR guidance](docs/decisions/README.md)
+- [Original specification](docs/FairSlot_Project_Specification.md)
 
-The requirements baseline is the master FairSlot specification supplied in the
-project conversation, refined by subsequent explicit user instructions. The [original specification](docs/FairSlot_Project_Specification.md) is preserved
-byte-for-byte from its attachment. It is historical context: later explicit user
-instructions authorize subsequent milestones and refine the baseline. The other
-documents provide the current working summary.
-Update design and status with each approved change and record significant accepted
-decisions. Resolve conflicts with the user before implementing affected behavior.
+The specification is an unchanged copy of the original chat attachment, including
+historical instructions. Subsequent explicit approvals refine it; current decisions
+live in the architecture, instructions and progress documents. Update these with
+approved changes, keep planned/implemented/verified claims distinct, and resolve
+requirement conflicts with the user before implementation.

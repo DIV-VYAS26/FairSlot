@@ -1,7 +1,18 @@
-# FairSlot architecture — planned, not implemented
+# FairSlot architecture
 
-All runtime components and flows below are planned. Phase 0 creates documentation
-and Git metadata only; no schema, endpoints or infrastructure exists.
+## Implemented foundation — Milestone 1
+
+The backend/ Maven project uses Java 21, Spring Boot 4.1.2, embedded Tomcat and
+Spring MVC. com.fairslot.FairSlotApplication scans com.fairslot and starts the
+application. HealthController handles GET /api/health and returns HTTP 200 with
+JSON {"status":"UP"}. Configuration binds to 127.0.0.1:8080 for local development.
+This endpoint indicates HTTP availability, not dependency readiness. No Actuator,
+database, reservation logic, messaging or external infrastructure is implemented.
+A JUnit Jupiter 6 test starts the real server on a random port and makes an HTTP
+request. The user approved Boot 4.1.2 with its managed JUnit 6 test stack in place
+of the original JUnit 5 plan.
+
+All reservation modules, schemas and event flows below remain **planned**.
 
 ## Modular monolith
 
